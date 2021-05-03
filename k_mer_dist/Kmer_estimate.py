@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import pickle
 from copy import deepcopy
 import time
+import statsmodels.datasets
 
 def get_MH_data(n, k, genome_file, rev_comp=False):
     '''
@@ -48,7 +49,7 @@ def get_kmc_data(k, genome_file, out_file, out_dir, verbose=False):
     kmc_database = kmc.KMCFile()
     abs_path = os.getcwd()
     out_path = abs_path+'/'+out_dir+'/'+out_file
-    os.system('kmc -k%d -cs1000 -b -v -ci2 %s %s %s' %(k, genome_file, out_path , '.'))
+    os.system('kmc -k%d -cs1000 -b -v -fm -ci2 %s %s %s' %(k, genome_file, out_path , '.'))
     kmc_database.OpenForListing(out_path)
     kmer_obj = kmc.KmerAPI(kmc_database.Info().kmer_length)
     counter = kmc.Count()
@@ -280,6 +281,24 @@ def get_boxplot_from_file(file, x, y, hue, outfile):
     sns.lineplot(x=x, y=y, data=df, hue=hue)
     plt.savefig(outfile)
 
+def test_lambda_estimate():
+    file = "bbsim4.fasta"
+    kmc_dict = get_kmc_data(25, file, file+"_out", "out")
+    kmc_df = pd.DataFrame(list(kmc_dict.items()), columns=['kmer_count', 'percentage'])
+    print(kmc_df.percentage.mean())
+    lambda_est = 1./kmc_df.percentage.mean()
+    print(lambda_est)
+    pickle_file = "k25n10000bbsim4.fasta.pickle"
+    with open(pickle_file, 'rb') as pf:
+        count_list = pickle.load(pf)
+    estimated_normed_dict = get_count_dict(count_list[0:10000])
+    cmash_df = pd.DataFrame(list(estimated_normed_dict.items()), columns=['kmer_count', 'percentage'])
+    lambda_est2 = 1./cmash_df.percentage.mean()
+    print(lambda_est2)
+
+
+
+
 if __name__ == "__main__":
     #kmc_result = get_kmc_data(60, 'SRR172902_1.fastq', 'SRR172902_out', 'out')
     #MH_result = get_MH_data(1000, 50, 'bbsim2.fasta', rev_comp=False)
@@ -298,4 +317,5 @@ if __name__ == "__main__":
     #test_bb_batch()
     #get_boxplot_from_file('df_for_boxplot.txt')
     #how_is_k_doing(1000, 7, 75, 5, 'SRR172902_1.fastq', 'howsk.txt')
-    get_boxplot_from_file('howsk.txt', 'k', 'wasserstein', 'method', "k_agains_wasserstein.png")
+    #get_boxplot_from_file('howsk.txt', 'k', 'wasserstein', 'method', "k_agains_wasserstein.png")
+    test_lambda_estimate()
